@@ -8,5 +8,6 @@ const router = express.Router();
 router.use(asyncHandler(authMiddleware));
 router.use(requireStoreUser);
 router.get('/summary', asyncHandler(reportsController.getSummary));
+router.post('/clear', asyncHandler(reportsController.clearReports));
 
 module.exports = router;

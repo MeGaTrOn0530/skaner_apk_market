@@ -10,5 +10,7 @@ router.use(requireStoreUser);
 router.get('/', asyncHandler(productsController.listProducts));
 router.get('/barcode/:barcode', asyncHandler(productsController.getProductByBarcode));
 router.post('/', asyncHandler(productsController.upsertProduct));
+router.post('/:id/update', asyncHandler(productsController.updateProduct));
+router.post('/:id/delete', asyncHandler(productsController.deleteProduct));
 
 module.exports = router;

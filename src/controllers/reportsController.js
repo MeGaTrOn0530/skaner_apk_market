@@ -1,4 +1,11 @@
+const bcrypt = require('bcryptjs');
+const { z } = require('zod');
 const pool = require('../db/pool');
+const AppError = require('../utils/appError');
+
+const clearReportsSchema = z.object({
+  currentPassword: z.string().min(3),
+});
 
 async function getSummary(req, res) {
   const [todayRows] = await pool.query(
@@ -62,6 +69,48 @@ async function getSummary(req, res) {
   });
 }
 
+async function clearReports(req, res) {
+  const payload = clearReportsSchema.parse(req.body);
+  const isPasswordValid = await bcrypt.compare(payload.currentPassword, req.user.password_hash);
+
+  if (!isPasswordValid) {
+    throw new AppError(401, 'Parol noto\'g\'ri.');
+  }
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    await connection.query(
+      `
+        DELETE si
+        FROM sale_items si
+        INNER JOIN sales s ON s.id = si.sale_id
+        WHERE s.store_id = ?
+      `,
+      [req.user.storeId],
+    );
+
+    await connection.query(
+      'DELETE FROM sales WHERE store_id = ?',
+      [req.user.storeId],
+    );
+
+    await connection.commit();
+
+    return res.json({
+      message: 'Hisobotlar tozalandi.',
+    });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   getSummary,
+  clearReports,
 };
